@@ -2,7 +2,7 @@ use crate::common::Position;
 use crate::snake::{Direction, Snake};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub (crate) enum WorldState {
+pub(crate) enum WorldState {
     Running,
     GameOver,
 }
@@ -33,8 +33,23 @@ impl World {
         result
     }
 
-    pub(crate) fn set_direction(&mut self, direction: Direction) {
-        self.snake_direction = direction;
+    pub(crate) fn set_direction(&mut self, direction: Direction) -> bool {
+        if !self.is_opposite_direction(&direction) {
+            self.snake_direction = direction;
+            return true;
+        }
+        
+        false
+    }
+
+    fn is_opposite_direction(&self, new: &Direction) -> bool {
+        matches!(
+        (&self.snake_direction, new),
+        (Direction::Up, Direction::Down)
+            | (Direction::Down, Direction::Up)
+            | (Direction::Left, Direction::Right)
+            | (Direction::Right, Direction::Left)
+        )
     }
 
     pub(crate) fn make_step(&mut self) -> WorldState {
@@ -51,12 +66,28 @@ impl World {
         }
     }
 
+    pub(crate) fn get_food_position(&self) -> Option<Position> {
+        self.food
+    }
+
+    pub(crate) fn get_snake_positions(&self) -> Vec<&Position> {
+        self.snake.body.iter().collect()
+    }
+
+    pub(crate) fn get_debug_info(&self) -> String {
+        format!(
+            "Snake positions: {:?},\n\
+             Food position: {:?}",
+            self.snake.body, self.food
+        )
+    }
+
     fn generate_food_position(&mut self) {
         if self.snake.body.len() == (self.width * self.height) as usize {
             self.food = None;
             return;
         }
-        
+
         loop {
             let x = rand::random::<u16>() % self.width;
             let y = rand::random::<u16>() % self.height;
@@ -81,7 +112,7 @@ mod tests {
         assert_eq!(world.snake.body.len(), 3);
         assert!(world.food.is_some());
     }
-    
+
     #[test]
     fn test_generate_food_position() {
         let mut world = World::new(10, 10, 3);
@@ -89,7 +120,7 @@ mod tests {
         let food = world.food.unwrap();
         assert_ne!(snake_head, food);
     }
-    
+
     #[test]
     fn test_generate_food_position_when_snake_is_on_the_whole_world() {
         let mut world = World::new(1, 1, 1);
@@ -97,7 +128,7 @@ mod tests {
         let food = world.food;
         assert_ne!(Some(snake_head), food);
     }
-    
+
     #[test]
     fn test_generate_food_position_when_snake_is_on_the_whole_world_and_food_is_none() {
         let mut world = World::new(1, 1, 1);
