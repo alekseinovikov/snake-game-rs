@@ -1,9 +1,16 @@
 use crate::common::Position;
-use crate::snake::Snake;
+use crate::snake::{Direction, Snake};
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub (crate) enum WorldState {
+    Running,
+    GameOver,
+}
 
 #[derive(Debug)]
 pub(crate) struct World {
     snake: Snake,
+    snake_direction: Direction,
     food: Option<Position>,
     width: u16,
     height: u16,
@@ -17,12 +24,31 @@ impl World {
 
         let mut result = Self {
             snake,
+            snake_direction: Direction::Right,
             food: None,
             width,
             height,
         };
         result.generate_food_position();
         result
+    }
+
+    pub(crate) fn set_direction(&mut self, direction: Direction) {
+        self.snake_direction = direction;
+    }
+
+    pub(crate) fn make_step(&mut self) -> WorldState {
+        self.snake.move_to(&self.snake_direction);
+        if self.snake.intersects(*self.food.as_ref().unwrap()) {
+            self.snake.eat();
+            self.generate_food_position();
+        }
+
+        if self.snake.intersects_itself() {
+            WorldState::GameOver
+        } else {
+            WorldState::Running
+        }
     }
 
     fn generate_food_position(&mut self) {
@@ -78,5 +104,36 @@ mod tests {
         world.food = None;
         world.generate_food_position();
         assert_eq!(world.food, None);
+    }
+
+    #[test]
+    fn test_set_direction() {
+        let mut world = World::new(10, 10, 3);
+        world.set_direction(Direction::Down);
+        assert_eq!(world.snake_direction, Direction::Down);
+    }
+
+    #[test]
+    fn test_make_step() {
+        let mut world = World::new(10, 10, 3);
+        let snake_head = world.snake.get_head().clone();
+        let food = world.food.unwrap();
+        world.set_direction(Direction::Down);
+        world.make_step();
+        assert_ne!(snake_head, world.snake.get_head());
+        assert_eq!(world.food, Some(food));
+    }
+
+    #[test]
+    fn test_make_step_when_snake_eats() {
+        let mut world = World::new(10, 10, 3);
+        let snake_head = world.snake.get_head().clone();
+        let food = world.food.unwrap();
+        world.food = Some(Position::new(snake_head.x, snake_head.y + 1));
+        world.snake_direction = Direction::Down;
+        world.make_step();
+        assert_eq!(world.snake.body.len(), 4);
+        assert_ne!(snake_head, world.snake.get_head());
+        assert_ne!(Some(food), world.food);
     }
 }
