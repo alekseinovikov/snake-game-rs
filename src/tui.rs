@@ -59,6 +59,7 @@ pub(crate) fn run() -> std::io::Result<()> {
             stdout
                 .execute(cursor::MoveTo(x, y))?
                 .execute(style::Print(text))?;
+            draw_score(&mut stdout, world.get_score())?
         }
     }
 
