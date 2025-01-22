@@ -14,6 +14,7 @@ pub(crate) struct World {
     food: Option<Position>,
     width: u16,
     height: u16,
+    score: u16,
 }
 
 impl World {
@@ -28,11 +29,16 @@ impl World {
             food: None,
             width,
             height,
+            score: 0,
         };
         result.generate_food_position();
         result
     }
 
+    pub(crate) fn get_score(&self) -> u16 {
+        self.score
+    }
+    
     pub(crate) fn set_direction(&mut self, direction: Direction) -> bool {
         if !self.is_opposite_direction(&direction) {
             self.snake_direction = direction;
@@ -53,10 +59,11 @@ impl World {
     }
 
     pub(crate) fn make_step(&mut self) -> WorldState {
-        self.snake.move_to(&self.snake_direction);
+        self.snake.move_to(&self.snake_direction, self.width, self.height);
         if self.snake.intersects(*self.food.as_ref().unwrap()) {
             self.snake.eat();
             self.generate_food_position();
+            self.score += 1;
         }
 
         if self.snake.intersects_itself() {
@@ -115,7 +122,7 @@ mod tests {
 
     #[test]
     fn test_generate_food_position() {
-        let mut world = World::new(10, 10, 3);
+        let world = World::new(10, 10, 3);
         let snake_head = world.snake.get_head().clone();
         let food = world.food.unwrap();
         assert_ne!(snake_head, food);
@@ -123,7 +130,7 @@ mod tests {
 
     #[test]
     fn test_generate_food_position_when_snake_is_on_the_whole_world() {
-        let mut world = World::new(1, 1, 1);
+        let world = World::new(1, 1, 1);
         let snake_head = world.snake.get_head().clone();
         let food = world.food;
         assert_ne!(Some(snake_head), food);
