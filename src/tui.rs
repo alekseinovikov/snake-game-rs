@@ -2,7 +2,7 @@ use crate::common::Position;
 use crate::snake::Direction;
 use crate::world::{World, WorldState};
 use crossterm::event::{Event, KeyCode};
-use crossterm::{cursor, event, style, terminal, ExecutableCommand};
+use crossterm::{cursor, event, execute, style, terminal, ExecutableCommand};
 use std::io::{stdout, Stdout, Write};
 use std::time::{Duration, Instant};
 
@@ -63,6 +63,11 @@ pub(crate) fn run() -> std::io::Result<()> {
         }
     }
 
+    terminal::disable_raw_mode()?;
+    stdout
+        .execute(terminal::LeaveAlternateScreen)
+        ?.execute(cursor::Show)?;
+    
     Ok(())
 }
 
